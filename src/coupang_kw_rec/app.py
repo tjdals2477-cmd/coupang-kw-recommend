@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hmac
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -13,6 +14,63 @@ from .pipeline import run_pipeline
 from .report import write_outputs
 from .seed import select_seeds
 from .source import InputData, read_core_workbook
+
+
+RESULT_COLUMN_LABELS = {
+    "rank": "순위",
+    "keyword": "추천 키워드",
+    "rec_grade": "추천 등급",
+    "action_ko": "추천 행동",
+    "score": "종합 점수",
+    "search_volume": "월간 총검색량",
+    "pc_qc": "PC 검색량",
+    "mobile_qc": "모바일 검색량",
+    "mobile_ratio": "모바일 비중(%)",
+    "comp_idx": "광고 경쟁도",
+    "pl_avg_depth": "평균 광고 노출 개수",
+    "naver_avg_ctr": "네이버 평균 클릭률(%)",
+    "seed_keyword": "연결된 기준 키워드",
+    "seed_count": "연결 기준어 수",
+    "seed_roas": "기준 키워드 ROAS",
+    "relevance": "상품명 연관도(%)",
+    "brand": "브랜드 구분",
+    "already_converting": "기존 전환 키워드",
+    "note": "참고 사항",
+}
+
+GRADE_LABELS = {
+    "REC_A_즉시등록": "A · 바로 등록",
+    "REC_B_테스트": "B · 소액 테스트",
+    "REC_C_관찰": "C · 관찰",
+    "REC_BRAND": "브랜드 · 우선 등록",
+}
+
+
+def _display_value(column: str, value):
+    if isinstance(value, float) and math.isnan(value):
+        return "-"
+    if column in {"mobile_ratio", "relevance"} and isinstance(value, (int, float)):
+        return round(value * 100, 1)
+    if column == "rec_grade":
+        return GRADE_LABELS.get(str(value), value)
+    if column == "brand" and value in {None, "", "NONE"}:
+        return "일반 키워드"
+    if column == "already_converting":
+        return "예" if value else "아니오"
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value)
+    return value
+
+
+def recommendations_for_display(rows: list[dict]) -> list[dict]:
+    """Return UI-only Korean labels without changing Excel/CSV contracts."""
+    return [
+        {
+            label: _display_value(column, row.get(column, ""))
+            for column, label in RESULT_COLUMN_LABELS.items()
+        }
+        for row in rows
+    ]
 
 
 def _streamlit_secret(st, name: str) -> str:
@@ -106,7 +164,11 @@ def main() -> None:
         seeds = select_seeds(data, config)
         if seed_only:
             st.success(f"시드 {len(seeds)}개를 골랐습니다. 네트워크 호출은 0회입니다.")
-            st.dataframe([{"keyword": seed.keyword, "reason": seed.reason, "seed_score": seed.seed_score} for seed in seeds], width="stretch")
+            st.dataframe(
+                [{"기준 키워드": seed.keyword, "선정 이유": seed.reason, "기준 점수": seed.seed_score} for seed in seeds],
+                width="stretch",
+                hide_index=True,
+            )
             return
 
         credentials = _credentials_from_streamlit(st)
@@ -128,7 +190,8 @@ def main() -> None:
 
         if result.recommendations:
             st.subheader("추천 결과")
-            st.dataframe(result.recommendations, width="stretch", hide_index=True)
+            st.caption("종합 점수와 상품명 연관도가 높을수록 좋고, 광고 경쟁도는 낮을수록 유리합니다. A는 바로 등록, B는 소액 테스트, C는 관찰 대상입니다.")
+            st.dataframe(recommendations_for_display(result.recommendations), width="stretch", hide_index=True)
         else:
             st.warning("추천 결과가 없습니다. 필터 설정, API 열쇠 또는 오프라인 캐시를 확인하세요.")
         if result.collection.failures:

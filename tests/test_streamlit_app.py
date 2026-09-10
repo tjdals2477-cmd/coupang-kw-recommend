@@ -3,8 +3,29 @@ import unittest
 
 from streamlit.testing.v1 import AppTest
 
+from coupang_kw_rec.app import recommendations_for_display
+
 
 class StreamlitAppTests(unittest.TestCase):
+    def test_recommendation_columns_are_korean_and_readable(self):
+        displayed = recommendations_for_display([
+            {
+                "rank": 1,
+                "keyword": "LED일자등",
+                "rec_grade": "REC_A_즉시등록",
+                "mobile_ratio": 0.625,
+                "relevance": 1.0,
+                "brand": "NONE",
+                "already_converting": False,
+            }
+        ])[0]
+        self.assertEqual(displayed["추천 키워드"], "LED일자등")
+        self.assertEqual(displayed["추천 등급"], "A · 바로 등록")
+        self.assertEqual(displayed["모바일 비중(%)"], 62.5)
+        self.assertEqual(displayed["상품명 연관도(%)"], 100.0)
+        self.assertEqual(displayed["브랜드 구분"], "일반 키워드")
+        self.assertEqual(displayed["기존 전환 키워드"], "아니오")
+
     def test_seed_only_user_flow(self):
         app_path = Path(__file__).resolve().parents[1] / "streamlit_app.py"
         app = AppTest.from_file(str(app_path))
