@@ -45,6 +45,32 @@ GRADE_LABELS = {
     "REC_BRAND": "브랜드 · 우선 등록",
 }
 
+HELD_COLUMN_LABELS = {
+    "keyword": "보류 키워드",
+    "reason": "보류 이유",
+    "search_volume": "월간 총검색량",
+    "comp_idx": "광고 경쟁도",
+    "seed_keyword": "연결된 기준 키워드",
+    "brand": "브랜드 구분",
+    "note": "참고 사항",
+}
+
+EXCLUDE_COLUMN_LABELS = {
+    "keyword": "제외 키워드",
+    "reason": "제외 이유",
+    "search_volume": "월간 총검색량",
+    "seed_keyword": "연결된 기준 키워드",
+    "brand": "브랜드 구분",
+}
+
+FAILURE_COLUMN_LABELS = {
+    "chunk": "수집 묶음 번호",
+    "seed_keywords": "요청한 기준 키워드",
+    "status": "상태",
+    "error": "오류 내용",
+    "attempts": "시도 횟수",
+}
+
 
 def _display_value(column: str, value):
     if isinstance(value, float) and math.isnan(value):
@@ -85,6 +111,13 @@ def recommendations_for_display(rows: list[dict]) -> list[dict]:
 
     return [
         display_row(row)
+        for row in rows
+    ]
+
+
+def rows_for_display(rows: list[dict], labels: dict[str, str]) -> list[dict]:
+    return [
+        {label: _display_value(column, row.get(column, "")) for column, label in labels.items()}
         for row in rows
     ]
 
@@ -198,40 +231,78 @@ def main() -> None:
             output_dir = temp / "output"
             paths = write_outputs(result, config, output_dir)
 
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("최종 추천", len(result.recommendations))
-        col2.metric("보류", len(result.filters.held))
-        col3.metric("역제안", len(result.filters.reverse_excludes))
-        col4.metric("실패 청크", len(result.collection.failures))
+        st.subheader("결과 보기")
+        recommendation_tab, held_tab, exclude_tab, failure_tab = st.tabs([
+            f"✅ 최종 추천 ({len(result.recommendations)})",
+            f"⏸️ 보류 ({len(result.filters.held)})",
+            f"🚫 제외 ({len(result.filters.reverse_excludes)})",
+            f"⚠️ 수집 실패 ({len(result.collection.failures)})",
+        ])
 
-        if result.recommendations:
-            st.subheader("추천 결과")
-            st.caption("추천 종합점수는 네이버 검색량·클릭률·경쟁도·상품명 연관도를 합쳐 100점 만점으로 환산한 값입니다. 점수와 연관도는 높을수록, 광고 경쟁도는 낮을수록 유리합니다.")
-            st.dataframe(
-                recommendations_for_display(result.recommendations),
-                width="stretch",
-                hide_index=True,
-                column_config={
-                    "추천 종합점수(100점)": st.column_config.NumberColumn(
-                        format="%.1f점",
-                        help="네이버 데이터와 상품명 연관도를 합쳐 현재 추천 결과 안에서 0~100점으로 환산한 내부 점수입니다.",
-                    ),
-                    "월간 총검색량": st.column_config.NumberColumn(format="%d회"),
-                    "PC 검색량": st.column_config.NumberColumn(format="%d회"),
-                    "모바일 검색량": st.column_config.NumberColumn(format="%d회"),
-                    "모바일 비중(%)": st.column_config.NumberColumn(format="%.1f%%"),
-                    "네이버 평균 클릭률(%)": st.column_config.NumberColumn(
-                        format="%.2f%%",
-                        help="네이버 검색광고 키워드 도구가 제공하는 PC·모바일 월평균 클릭률의 평균입니다.",
-                    ),
-                    "상품명 연관도(%)": st.column_config.NumberColumn(format="%.1f%%"),
-                },
-            )
-        else:
-            st.warning("추천 결과가 없습니다. 필터 설정, API 열쇠 또는 오프라인 캐시를 확인하세요.")
-        if result.collection.failures:
-            with st.expander("수집 실패 보기"):
-                st.dataframe(result.collection.failures, width="stretch", hide_index=True)
+        with recommendation_tab:
+            if result.recommendations:
+                st.caption("추천 종합점수는 네이버 검색량·클릭률·경쟁도·상품명 연관도를 합쳐 100점 만점으로 환산한 값입니다. 점수와 연관도는 높을수록, 광고 경쟁도는 낮을수록 유리합니다.")
+                st.dataframe(
+                    recommendations_for_display(result.recommendations),
+                    width="stretch",
+                    hide_index=True,
+                    column_config={
+                        "추천 종합점수(100점)": st.column_config.NumberColumn(
+                            format="%.1f점",
+                            help="네이버 데이터와 상품명 연관도를 합쳐 현재 추천 결과 안에서 0~100점으로 환산한 내부 점수입니다.",
+                        ),
+                        "월간 총검색량": st.column_config.NumberColumn(format="%d회"),
+                        "PC 검색량": st.column_config.NumberColumn(format="%d회"),
+                        "모바일 검색량": st.column_config.NumberColumn(format="%d회"),
+                        "모바일 비중(%)": st.column_config.NumberColumn(format="%.1f%%"),
+                        "네이버 평균 클릭률(%)": st.column_config.NumberColumn(
+                            format="%.2f%%",
+                            help="네이버 검색광고 키워드 도구가 제공하는 PC·모바일 월평균 클릭률의 평균입니다.",
+                        ),
+                        "상품명 연관도(%)": st.column_config.NumberColumn(format="%.1f%%"),
+                    },
+                )
+            else:
+                st.warning("추천 결과가 없습니다. 보류·제외 탭에서 이유를 확인하세요.")
+
+        with held_tab:
+            st.caption("보류는 버리는 키워드가 아닙니다. 브랜드 오인 가능성이 있거나 상품 카테고리와의 관계가 불확실해 사람의 확인이 필요한 후보입니다.")
+            with st.expander("보류 기준 자세히 보기"):
+                st.markdown(
+                    "- **브랜드 의심:** 브랜드처럼 보이는 단어가 있지만 자동으로 타사 브랜드라고 확정하기 어려운 경우\n"
+                    "- **카테고리 관련성 부족:** 설정된 필수 카테고리 단어가 없어 입력 상품과 직접 관련 있는지 확인이 필요한 경우"
+                )
+            if result.filters.held:
+                st.dataframe(
+                    rows_for_display(result.filters.held, HELD_COLUMN_LABELS),
+                    width="stretch",
+                    hide_index=True,
+                    column_config={"월간 총검색량": st.column_config.NumberColumn(format="%d회")},
+                )
+            else:
+                st.info("보류된 키워드가 없습니다.")
+
+        with exclude_tab:
+            st.caption("제외는 현재 상품에 없는 기능이나 조건이 포함되어 광고에서 빼는 것이 좋은 후보입니다. 실제 등록 전에는 한 번 확인하세요.")
+            if result.filters.reverse_excludes:
+                st.dataframe(
+                    rows_for_display(result.filters.reverse_excludes, EXCLUDE_COLUMN_LABELS),
+                    width="stretch",
+                    hide_index=True,
+                    column_config={"월간 총검색량": st.column_config.NumberColumn(format="%d회")},
+                )
+            else:
+                st.info("제외할 키워드가 없습니다.")
+
+        with failure_tab:
+            if result.collection.failures:
+                st.dataframe(
+                    rows_for_display(result.collection.failures, FAILURE_COLUMN_LABELS),
+                    width="stretch",
+                    hide_index=True,
+                )
+            else:
+                st.success("모든 네이버 키워드 수집이 정상적으로 완료됐습니다.")
 
         st.subheader("추천·제외 파일 받기")
         st.caption("추천 파일은 광고에 넣을 후보이고, 제외 파일은 광고에서 뺄 후보입니다. 제외 키워드는 등록 전에 한 번 확인하세요.")

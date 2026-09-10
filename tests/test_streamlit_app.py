@@ -3,7 +3,7 @@ import unittest
 
 from streamlit.testing.v1 import AppTest
 
-from coupang_kw_rec.app import recommendations_for_display
+from coupang_kw_rec.app import HELD_COLUMN_LABELS, recommendations_for_display, rows_for_display
 
 
 class StreamlitAppTests(unittest.TestCase):
@@ -35,6 +35,15 @@ class StreamlitAppTests(unittest.TestCase):
             {"keyword": "하", "score": 0.2},
         ])
         self.assertEqual([row["추천 종합점수(100점)"] for row in displayed], [100.0, 50.0, 0.0])
+
+    def test_held_keywords_have_korean_columns(self):
+        displayed = rows_for_display(
+            [{"keyword": "의심키워드", "reason": "브랜드 의심: 샘플", "search_volume": 120}],
+            HELD_COLUMN_LABELS,
+        )[0]
+        self.assertEqual(displayed["보류 키워드"], "의심키워드")
+        self.assertEqual(displayed["보류 이유"], "브랜드 의심: 샘플")
+        self.assertEqual(displayed["월간 총검색량"], 120)
 
     def test_seed_only_user_flow(self):
         app_path = Path(__file__).resolve().parents[1] / "streamlit_app.py"
