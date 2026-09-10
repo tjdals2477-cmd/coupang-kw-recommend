@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hmac
+import os
 from pathlib import Path
 import tempfile
 
@@ -13,17 +15,40 @@ from .seed import select_seeds
 from .source import InputData, read_core_workbook
 
 
+def _streamlit_secret(st, name: str) -> str:
+    try:
+        return str(st.secrets.get(name, "")).strip()
+    except Exception:
+        return ""
+
+
+def _require_app_password(st) -> bool:
+    """Render a password gate so a public deployment stays personal."""
+    expected = _streamlit_secret(st, "APP_PASSWORD") or os.getenv("APP_PASSWORD", "").strip()
+    if not expected:
+        st.error("앱 비밀번호가 아직 설정되지 않았습니다. Streamlit Secrets에 APP_PASSWORD를 넣어주세요.")
+        return False
+    if st.session_state.get("authenticated") is True:
+        return True
+
+    st.title("🔒 쿠팡 키워드 추천")
+    st.caption("주인만 들어갈 수 있는 비밀번호 문입니다.")
+    supplied = st.text_input("앱 비밀번호", type="password")
+    if st.button("문 열기", type="primary"):
+        if hmac.compare_digest(supplied, expected):
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("비밀번호가 맞지 않습니다.")
+    return False
+
+
 def _credentials_from_streamlit(st) -> Credentials:
-    def secret(name: str) -> str:
-        try:
-            return str(st.secrets.get(name, "")).strip()
-        except Exception:
-            return ""
     from_env = Credentials.from_env()
     return Credentials(
-        secret("NAVER_AD_API_KEY") or from_env.api_key,
-        secret("NAVER_AD_SECRET_KEY") or from_env.secret_key,
-        secret("NAVER_AD_CUSTOMER_ID") or from_env.customer_id,
+        _streamlit_secret(st, "NAVER_AD_API_KEY") or from_env.api_key,
+        _streamlit_secret(st, "NAVER_AD_SECRET_KEY") or from_env.secret_key,
+        _streamlit_secret(st, "NAVER_AD_CUSTOMER_ID") or from_env.customer_id,
     )
 
 
@@ -31,6 +56,8 @@ def main() -> None:
     import streamlit as st
 
     st.set_page_config(page_title="쿠팡 키워드 추천", page_icon="🔎", layout="wide")
+    if not _require_app_password(st):
+        return
     st.title("쿠팡 키워드 추천")
     st.caption("상품명이나 핵심 키워드를 넣으면 네이버 검색광고 데이터를 바탕으로 최대 500개를 정리합니다.")
 

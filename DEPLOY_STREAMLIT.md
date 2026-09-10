@@ -45,12 +45,13 @@ git push -u origin main
 Deploy를 누르기 전에 Advanced settings를 엽니다. Secrets 칸에 아래 형식을 붙여넣고 따옴표 안에 실제 값을 입력합니다.
 
 ```toml
+APP_PASSWORD = "나만-아는-긴-비밀번호"
 NAVER_AD_API_KEY = "실제 API Key"
 NAVER_AD_SECRET_KEY = "실제 Secret Key"
 NAVER_AD_CUSTOMER_ID = "실제 Customer ID"
 ```
 
-이 값은 채팅, GitHub, 화면 캡처에 공개하지 않습니다.
+공개 앱으로 배포해도 `APP_PASSWORD` 로그인 문이 먼저 표시됩니다. 이 값들은 채팅, GitHub, 화면 캡처에 공개하지 않습니다.
 
 ## 5. 배포하기
 
