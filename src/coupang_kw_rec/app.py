@@ -233,17 +233,18 @@ def main() -> None:
             with st.expander("수집 실패 보기"):
                 st.dataframe(result.collection.failures, width="stretch", hide_index=True)
 
-        st.subheader("파일 받기")
+        st.subheader("추천·제외 파일 받기")
+        st.caption("추천 파일은 광고에 넣을 후보이고, 제외 파일은 광고에서 뺄 후보입니다. 제외 키워드는 등록 전에 한 번 확인하세요.")
         downloads = st.columns(4)
         labels = {
-            "workbook": ("엑셀 보고서", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-            "recommend": ("등록용 CSV", "text/csv"),
-            "full": ("전체 CSV", "text/csv"),
-            "exclude": ("역제안 CSV", "text/csv"),
+            "workbook": ("추천 결과 엑셀", "추천_키워드_보고서.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            "recommend": ("추천 키워드 CSV", "추천_키워드.csv", "text/csv"),
+            "full": ("추천 상세 CSV", "추천_키워드_상세.csv", "text/csv"),
+            "exclude": ("제외 키워드 CSV", "제외_키워드.csv", "text/csv"),
         }
         for column, (key, path) in zip(downloads, paths.items()):
-            label, mime = labels[key]
-            column.download_button(label, path.read_bytes(), file_name=path.name, mime=mime, width="stretch")
+            label, download_name, mime = labels[key]
+            column.download_button(label, path.read_bytes(), file_name=download_name, mime=mime, width="stretch")
 
 
 if __name__ == "__main__":
