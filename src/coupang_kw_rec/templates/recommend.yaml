@@ -65,7 +65,7 @@
     "keyword_min_length": 2,
     "keyword_max_length": 25,
     "min_search_volume": 10,
-    "category_must_include_any": ["led", "조명", "등", "램프", "전구", "스위치", "콘센트"],
+    "category_must_include_any": [],
     "forbidden_terms": ["중고", "짝퉁", "가품"],
     "competitor_brands": ["필립스", "오스람", "번개표", "금호전기", "장수램프", "샤오미", "philips", "osram", "xiaomi"],
     "ambiguous_brand_terms": ["삼성", "lg"],

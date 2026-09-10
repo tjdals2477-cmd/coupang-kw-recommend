@@ -33,6 +33,11 @@ class FilterTests(unittest.TestCase):
         self.assertEqual(len(result.reverse_excludes), 1)
         self.assertIn("센서", result.reverse_excludes[0]["reason"])
 
+    def test_generic_product_is_not_held_by_electrical_category_words(self):
+        result = apply_filters([row("안경테")], InputData(direct_seeds=["안경"]), [], self.config)
+        self.assertEqual([item["keyword"] for item in result.candidates], ["안경테"])
+        self.assertEqual(result.held, [])
+
 
 if __name__ == "__main__":
     unittest.main()
