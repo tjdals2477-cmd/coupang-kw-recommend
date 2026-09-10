@@ -21,7 +21,7 @@ RESULT_COLUMN_LABELS = {
     "keyword": "추천 키워드",
     "rec_grade": "추천 등급",
     "action_ko": "추천 행동",
-    "score": "종합 점수",
+    "score": "추천 종합점수(100점)",
     "search_volume": "월간 총검색량",
     "pc_qc": "PC 검색량",
     "mobile_qc": "모바일 검색량",
@@ -64,11 +64,27 @@ def _display_value(column: str, value):
 
 def recommendations_for_display(rows: list[dict]) -> list[dict]:
     """Return UI-only Korean labels without changing Excel/CSV contracts."""
+    numeric_scores = [
+        float(row["score"])
+        for row in rows
+        if isinstance(row.get("score"), (int, float)) and not math.isnan(float(row["score"]))
+    ]
+    score_min = min(numeric_scores, default=0.0)
+    score_max = max(numeric_scores, default=0.0)
+
+    def display_row(row: dict) -> dict:
+        displayed: dict = {}
+        for column, label in RESULT_COLUMN_LABELS.items():
+            value = row.get(column, "")
+            if column == "score" and isinstance(value, (int, float)) and not math.isnan(float(value)):
+                value = 100.0 if score_max == score_min else (float(value) - score_min) / (score_max - score_min) * 100
+                displayed[label] = round(value, 1)
+            else:
+                displayed[label] = _display_value(column, value)
+        return displayed
+
     return [
-        {
-            label: _display_value(column, row.get(column, ""))
-            for column, label in RESULT_COLUMN_LABELS.items()
-        }
+        display_row(row)
         for row in rows
     ]
 
@@ -190,8 +206,27 @@ def main() -> None:
 
         if result.recommendations:
             st.subheader("추천 결과")
-            st.caption("종합 점수와 상품명 연관도가 높을수록 좋고, 광고 경쟁도는 낮을수록 유리합니다. A는 바로 등록, B는 소액 테스트, C는 관찰 대상입니다.")
-            st.dataframe(recommendations_for_display(result.recommendations), width="stretch", hide_index=True)
+            st.caption("추천 종합점수는 네이버 검색량·클릭률·경쟁도·상품명 연관도를 합쳐 100점 만점으로 환산한 값입니다. 점수와 연관도는 높을수록, 광고 경쟁도는 낮을수록 유리합니다.")
+            st.dataframe(
+                recommendations_for_display(result.recommendations),
+                width="stretch",
+                hide_index=True,
+                column_config={
+                    "추천 종합점수(100점)": st.column_config.NumberColumn(
+                        format="%.1f점",
+                        help="네이버 데이터와 상품명 연관도를 합쳐 현재 추천 결과 안에서 0~100점으로 환산한 내부 점수입니다.",
+                    ),
+                    "월간 총검색량": st.column_config.NumberColumn(format="%d회"),
+                    "PC 검색량": st.column_config.NumberColumn(format="%d회"),
+                    "모바일 검색량": st.column_config.NumberColumn(format="%d회"),
+                    "모바일 비중(%)": st.column_config.NumberColumn(format="%.1f%%"),
+                    "네이버 평균 클릭률(%)": st.column_config.NumberColumn(
+                        format="%.2f%%",
+                        help="네이버 검색광고 키워드 도구가 제공하는 PC·모바일 월평균 클릭률의 평균입니다.",
+                    ),
+                    "상품명 연관도(%)": st.column_config.NumberColumn(format="%.1f%%"),
+                },
+            )
         else:
             st.warning("추천 결과가 없습니다. 필터 설정, API 열쇠 또는 오프라인 캐시를 확인하세요.")
         if result.collection.failures:

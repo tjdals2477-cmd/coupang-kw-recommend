@@ -13,6 +13,7 @@ class StreamlitAppTests(unittest.TestCase):
                 "rank": 1,
                 "keyword": "LED일자등",
                 "rec_grade": "REC_A_즉시등록",
+                "score": 0.42,
                 "mobile_ratio": 0.625,
                 "relevance": 1.0,
                 "brand": "NONE",
@@ -21,10 +22,19 @@ class StreamlitAppTests(unittest.TestCase):
         ])[0]
         self.assertEqual(displayed["추천 키워드"], "LED일자등")
         self.assertEqual(displayed["추천 등급"], "A · 바로 등록")
+        self.assertEqual(displayed["추천 종합점수(100점)"], 100.0)
         self.assertEqual(displayed["모바일 비중(%)"], 62.5)
         self.assertEqual(displayed["상품명 연관도(%)"], 100.0)
         self.assertEqual(displayed["브랜드 구분"], "일반 키워드")
         self.assertEqual(displayed["기존 전환 키워드"], "아니오")
+
+    def test_score_is_normalized_to_one_hundred_points(self):
+        displayed = recommendations_for_display([
+            {"keyword": "상", "score": 0.8},
+            {"keyword": "중", "score": 0.5},
+            {"keyword": "하", "score": 0.2},
+        ])
+        self.assertEqual([row["추천 종합점수(100점)"] for row in displayed], [100.0, 50.0, 0.0])
 
     def test_seed_only_user_flow(self):
         app_path = Path(__file__).resolve().parents[1] / "streamlit_app.py"
