@@ -1,0 +1,15 @@
+.env
+.venv/
+.install-check/
+.pip-cache/
+init-check/
+init-check-venv/
+build/
+dist/
+*.spec
+*.egg-info/
+__pycache__/
+.pytest_cache/
+output/
+.streamlit/secrets.toml
+node_modules/

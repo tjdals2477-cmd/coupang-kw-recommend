@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coupang-kw-recommend"
+version = "0.1.0"
+description = "Naver Search Ads based keyword recommender for Coupang advertisers"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pandas>=2.0",
+  "openpyxl>=3.1",
+  "PyYAML>=6.0",
+  "requests>=2.31",
+  "python-dotenv>=1.0",
+  "click>=8.1",
+  "XlsxWriter>=3.1",
+  "streamlit>=1.40",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "responses>=0.25", "pyinstaller>=6.0"]
+
+[project.scripts]
+coupang-kw-rec = "coupang_kw_rec.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+coupang_kw_rec = ["templates/*.yaml", "templates/*.example"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

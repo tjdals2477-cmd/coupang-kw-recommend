@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0.0",
+  "source": {
+    "contract_filename": "contract.json",
+    "supported_schema_versions": ["1.0.0"],
+    "fuzzy_threshold": 0.72,
+    "sheets": {
+      "keyword": "01_키워드_제안",
+      "converting": "03_확장키워드_후보",
+      "token": "08_토큰성과"
+    },
+    "column_aliases": {
+      "keyword": ["keyword", "키워드", "검색어"],
+      "token": ["token", "토큰"],
+      "impressions": ["impressions", "노출수", "노출"],
+      "clicks": ["clicks", "클릭수", "클릭"],
+      "CTR": ["CTR", "클릭률"],
+      "orders": ["orders", "주문수", "전환수"],
+      "CVR": ["CVR", "전환율"],
+      "revenue": ["revenue", "매출", "광고매출"],
+      "ROAS": ["ROAS", "광고수익률"]
+    }
+  },
+  "seed_selection": {
+    "max_seeds": 60,
+    "performance_count": 20,
+    "volume_count": 20,
+    "token_count": 20,
+    "token_min_cvr": 0.03,
+    "direct_seed_score": 1.0,
+    "brand_seed_score": 1.0,
+    "reason_labels": {
+      "direct": "직접입력",
+      "performance": "전환매출 상위",
+      "volume": "노출·CTR 상위",
+      "brand": "자사 브랜드 필수",
+      "token": "클릭·CVR 양호 토큰"
+    }
+  },
+  "brands": {
+    "own": {
+      "GONEO": ["고네오"],
+      "DAYON": ["데이온"],
+      "ANT": ["안트"],
+      "DNN": ["디앤앤"]
+    },
+    "english_word_boundary": true
+  },
+  "naver_api": {
+    "base_url": "https://api.searchad.naver.com",
+    "uri": "/keywordstool",
+    "method": "GET",
+    "show_detail": 1,
+    "chunk_size": 5,
+    "request_interval_seconds": 0.3,
+    "max_retries": 3,
+    "backoff_base_seconds": 2.0,
+    "timeout_seconds": 30,
+    "error_text_limit": 500,
+    "cache_ttl_days": 7,
+    "low_volume_replacement": 5,
+    "ctr_percent_scale": 100
+  },
+  "filters": {
+    "keyword_min_length": 2,
+    "keyword_max_length": 25,
+    "min_search_volume": 10,
+    "category_must_include_any": ["led", "조명", "등", "램프", "전구", "스위치", "콘센트"],
+    "forbidden_terms": ["중고", "짝퉁", "가품"],
+    "competitor_brands": ["필립스", "오스람", "번개표", "금호전기", "장수램프", "샤오미", "philips", "osram", "xiaomi"],
+    "ambiguous_brand_terms": ["삼성", "lg"],
+    "special_character_pattern": "[^0-9A-Za-z가-힣\\s+&*xX./%-]",
+    "product_absent_terms": ["태양광", "충전식", "센서", "리모컨", "삼각대", "이동식"]
+  },
+  "scoring": {
+    "w_volume": 0.35,
+    "w_mobile": 0.1,
+    "w_seed_perf": 0.2,
+    "w_relevance": 0.25,
+    "w_comp": 0.1,
+    "seed_count_bonus": 0.02,
+    "brand_grade": "REC_BRAND",
+    "competition_scores": {"높음": 1.0, "high": 1.0, "중간": 0.5, "medium": 0.5, "낮음": 0.0, "low": 0.0},
+    "unknown_competition_score": 0.5,
+    "high_volume_top_fraction": 0.2,
+    "grade_a_top_fraction": 0.2,
+    "grade_b_top_fraction": 0.5,
+    "grade_a": "REC_A_즉시등록",
+    "grade_b": "REC_B_테스트",
+    "grade_c": "REC_C_관찰",
+    "actions": {
+      "REC_A_즉시등록": "광고센터 등록",
+      "REC_B_테스트": "소액 테스트",
+      "REC_C_관찰": "검색결과 확인 후 검토",
+      "REC_BRAND": "브랜드 키워드 등록"
+    },
+    "weight_keys": ["w_volume", "w_mobile", "w_seed_perf", "w_relevance", "w_comp", "seed_count_bonus"]
+  },
+  "quality": {"numeric_fields": ["pc_qc", "mobile_qc", "search_volume", "mobile_ratio", "pl_avg_depth", "naver_avg_ctr"]},
+  "output": {
+    "limit_default": 500,
+    "limit_max": 500,
+    "sheets": {
+      "summary": "00_요약",
+      "recommendations": "01_추천키워드",
+      "brands": "02_브랜드확장",
+      "held": "03_보류",
+      "failures": "04_수집실패",
+      "reverse": "05_역제안_제외키워드"
+    },
+    "workbook_prefix": "추천키워드_",
+    "recommend_csv": "recommend_keywords.csv",
+    "full_csv": "recommend_keywords_full.csv",
+    "exclude_csv": "suggest_exclude.csv",
+    "console_preview_count": 20,
+    "recommend_export_grades": ["REC_A_즉시등록", "REC_B_테스트", "REC_BRAND"],
+    "recommendation_columns": ["rank", "keyword", "rec_grade", "action_ko", "score", "search_volume", "pc_qc", "mobile_qc", "mobile_ratio", "comp_idx", "pl_avg_depth", "naver_avg_ctr", "seed_keyword", "seed_count", "seed_roas", "relevance", "brand", "already_converting", "note"],
+    "brand_columns": ["brand", "status", "keyword", "rec_grade", "score", "search_volume", "note"],
+    "held_columns": ["keyword", "reason", "search_volume", "comp_idx", "seed_keyword", "brand", "note"],
+    "failure_columns": ["chunk", "seed_keywords", "status", "error", "attempts"],
+    "reverse_columns": ["keyword", "reason", "search_volume", "seed_keyword", "brand"],
+    "notices": [
+      "※ 네이버 검색광고 데이터 기반입니다. 네이버와 쿠팡은 검색 행태와 구매 의도가 다르므로 검색량은 절대치가 아닌 상대적 우선순위 참고용입니다.",
+      "※ compIdx는 네이버 광고 경쟁도이며 쿠팡 경쟁도와 무관합니다.",
+      "※ 등록 전 실제 쿠팡 검색결과에서 자사 상품 노출 여부를 확인하십시오."
+    ]
+  }
+}

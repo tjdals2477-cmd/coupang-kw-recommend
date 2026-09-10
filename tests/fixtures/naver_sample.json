@@ -1,0 +1,22 @@
+{
+  "keywordList": [
+    {
+      "relKeyword": "LED일자등",
+      "monthlyPcQcCnt": "1,234",
+      "monthlyMobileQcCnt": "< 10",
+      "monthlyAvePcCtr": 1.2,
+      "monthlyAveMobileCtr": 1.8,
+      "compIdx": "높음",
+      "plAvgDepth": 8.3
+    },
+    {
+      "relKeyword": "데이온LED등",
+      "monthlyPcQcCnt": null,
+      "monthlyMobileQcCnt": 30,
+      "monthlyAvePcCtr": null,
+      "monthlyAveMobileCtr": 2.1,
+      "compIdx": "중간",
+      "plAvgDepth": 5
+    }
+  ]
+}
